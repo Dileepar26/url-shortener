@@ -26,6 +26,6 @@ app.use('*', (req, res) => {
     // res.status(404).json({data: 1})
 })
 const HTTP_PORT = 3000
-app.listen(HTTP_PORT, function () {
+app.listen(HTTP_PORT,'0.0.0.0', function () {
     logger.info(`HTTP Server started at port ${HTTP_PORT}`);
 });
