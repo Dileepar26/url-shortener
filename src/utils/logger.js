@@ -5,13 +5,13 @@ const customFormat = format.combine(format.timestamp({ format: 'YYYY-MM-DD HH:mm
   return `${info.timestamp} [${info.level.toUpperCase()}] ${info.message}`
 }))
 
-const generalLogs = new transports.DailyRotateFile({
-  filename: './src/logs/%DATE%.log',
-  datePattern: 'YYYY-MM-DD',
-  zippedArchive: false,
-  maxFiles: '15d',
-  level: 'silly'
-})
+// const generalLogs = new transports.DailyRotateFile({
+//   filename: './src/logs/%DATE%.log',
+//   datePattern: 'YYYY-MM-DD',
+//   zippedArchive: false,
+//   maxFiles: '15d',
+//   level: 'silly'
+// })
 
 const logger = createLogger({
   format: customFormat,
