@@ -7,7 +7,7 @@ const { Database } = require('../utils/database');
 
 const clientID = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+const callbackURL = "https://c889-3-82-244-196.ngrok-free.app/auth/google/callback"
 
 
 const googleLogin = async (req, res) => {
