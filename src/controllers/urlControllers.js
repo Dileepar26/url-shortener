@@ -4,9 +4,18 @@ const geoip = require('geoip-lite');
 const { validateCreateShortUrl } = require('../validators/urlControllers');
 const logger = require('../utils/logger');
 const useragent = require('useragent'); // Parse User-Agent header
+const { authTokenWithoutMiddleware } = require('../middlewares/authenticateToken');
 
 const createShortUrl = async (req, res) => {
   try {
+    let user_id = null;
+    if (req.headers['authorization']) {
+      const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+      const user = await authTokenWithoutMiddleware(token)
+      if (user) {
+        user_id = user.id
+      }
+    }
     const clientError = validateCreateShortUrl(req.body);
     if (clientError) {
       logger.warn(clientError);
@@ -17,27 +26,26 @@ const createShortUrl = async (req, res) => {
     }
     const { longUrl, customAlias, topic } = req.body;
     const shortUrl = customAlias || shortid.generate();
-    const userId = req.user.id;
     const DB = new Database()
     const query = await DB.query(
-      'INSERT INTO urls (longUrl, shortUrl, customAlias, topic, user_id) VALUES (?, ?, ?, ?, ?)',
-      [longUrl, shortUrl, customAlias, topic, userId],
+      'INSERT INTO urls (longUrl, shortUrl, topic, user_id) VALUES (?, ?, ?, ?)',
+      [longUrl, shortUrl, topic, user_id],
     );
     res.status(201).json({
-      success:true,
+      success: true,
       message: "data created successfully",
-      shortUrl, 
+      shortUrl,
       createdAt: new Date()
-     });
+    });
   } catch (error) {
     logger.error(error.stack)
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ 
+      return res.status(409).json({
         success: false,
-        message: 'Custom alias already exists' 
+        message: 'Custom alias already exists'
       });
     } else {
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         message: error.message
       });
@@ -48,13 +56,21 @@ const createShortUrl = async (req, res) => {
 
 const redirectUrl = async (req, res) => {
   try {
+    let user_id = null;
+    if (req.headers['authorization']) {
+      const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+      const user = await authTokenWithoutMiddleware(token)
+      if (user) {
+        user_id = user.id
+      }
+    }
     const { alias } = req.params;
     const DB = new Database();
     console.log(alias)
     // Fetch the original URL
     const rows = await DB.query(
-      `SELECT longUrl FROM urls WHERE shortUrl = ? OR customAlias = ?`,
-      [alias, alias]
+      `SELECT longUrl FROM urls WHERE shortUrl = ?`,
+      [alias]
     );
 
     if (rows.length === 0) {
@@ -62,13 +78,6 @@ const redirectUrl = async (req, res) => {
     }
 
     const longUrl = rows[0].longUrl;
-
-    // Increment total clicks
-    await DB.query(
-      `UPDATE urls SET clicks = clicks + 1 WHERE shortUrl = ? OR customAlias = ?`,
-      [alias, alias]
-    );
-    const user_id = req.user.id
     const userAgentHeader = req.headers['user-agent'] || 'Unknown';
     const userAgent = useragent.parse(userAgentHeader);
     const deviceType = userAgent.device.family === 'Other' ? 'Desktop' : 'Mobile';

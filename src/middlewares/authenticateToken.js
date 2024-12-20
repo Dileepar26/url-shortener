@@ -22,4 +22,21 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
-module.exports = authenticateToken;
+const authTokenWithoutMiddleware = async(token) => {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const DB = new Database();
+        const user = await DB.query(`SELECT * FROM users WHERE id = ?;`, [decoded.id]);
+        if (user.length === 0) {
+            return null
+        }
+        return user[0];
+    } catch (error) {
+        logger.error(error.stack)
+    }
+  }
+
+module.exports = {
+    authenticateToken,
+    authTokenWithoutMiddleware
+};

@@ -3,3 +3,5 @@ npm-debug.log
 .env
 .DS_Store
 logs
+src/logs
+docker-compose.yml

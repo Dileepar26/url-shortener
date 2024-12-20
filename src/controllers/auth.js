@@ -2,12 +2,12 @@ const express = require('express');
 const axios = require('axios');
 const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
 const { Database } = require('../utils/database');
+require('dotenv').config();
 
 const clientID = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const callbackURL = "https://c889-3-82-244-196.ngrok-free.app/auth/google/callback"
+const callbackURL = process.env.GOOGLE_CALLBACK_URL;
 
 
 const googleLogin = async (req, res) => {
@@ -53,7 +53,7 @@ const googleRedirect = async (req, res) => {
         const DB = new Database();
         const existingUser = await DB.query(`SELECT id, googleId, displayName, email, picture FROM users WHERE googleId = ?`,[id]);
         if (existingUser.length) {
-            const token = jwt.sign({id: existingUser[0].id},process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION || '1h' });
+            const token = jwt.sign({id: existingUser[0].id},process.env.JWT_SECRET); //, { expiresIn: process.env.JWT_EXPIRATION || '1h' }
             return res.status(200).json({
                 success: true,
                 message: 'Success',

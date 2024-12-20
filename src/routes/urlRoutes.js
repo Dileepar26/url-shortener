@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { createShortUrl, redirectUrl } = require('../controllers/urlControllers');
-const authenticateToken = require('../middlewares/authenticateToken');
+const { authenticateToken } = require('../middlewares/authenticateToken');
+const { getUrlAnalytics, getTopicAnalytics, getOverallAnalytics } = require('../controllers/analytics');
 
-router.post('/shorten', authenticateToken, createShortUrl);
-router.get('/shorten/:alias', authenticateToken, redirectUrl);
-// router.get('/analytics/:alias', authenticateToken, getUrlAnalytics);
-// router.get('/analytics/topic/:topic', authenticateToken, getTopicAnalytics);
-// router.get('/overall/analytics', getOverallAnalytics);
+router.post('/shorten', createShortUrl);
+router.get('/shorten/:alias', redirectUrl);
+router.get('/analytics/:alias', getUrlAnalytics);
+router.get('/analytics/topic/:topic', getTopicAnalytics);
+router.get('/overall/analytics', getOverallAnalytics);
 module.exports = router;
