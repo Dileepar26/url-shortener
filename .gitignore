@@ -1,3 +1,4 @@
 node_modules
 src/logs
 .env
+docker-compose.yml
