@@ -5,6 +5,7 @@ const { validateCreateShortUrl } = require('../validators/urlControllers');
 const logger = require('../utils/logger');
 const useragent = require('useragent'); // Parse User-Agent header
 const { authTokenWithoutMiddleware } = require('../middlewares/authenticateToken');
+const redisClient = require('../middlewares/redis');
 
 const createShortUrl = async (req, res) => {
   try {
@@ -67,17 +68,7 @@ const redirectUrl = async (req, res) => {
     const { alias } = req.params;
     const DB = new Database();
     console.log(alias)
-    // Fetch the original URL
-    const rows = await DB.query(
-      `SELECT longUrl FROM urls WHERE shortUrl = ?`,
-      [alias]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).send('URL not found');
-    }
-
-    const longUrl = rows[0].longUrl;
+    // =====================================
     const userAgentHeader = req.headers['user-agent'] || 'Unknown';
     const userAgent = useragent.parse(userAgentHeader);
     const deviceType = userAgent.device.family === 'Other' ? 'Desktop' : 'Mobile';
@@ -90,12 +81,35 @@ const redirectUrl = async (req, res) => {
       country = geo?.country || 'Unknown';
       city = geo?.city || 'Unknown';
     }
+    // =====================================
     // Log the analytics data
     await DB.query(
       `INSERT INTO url_analytics (shortUrl, userAgent, ipAddress, osType, deviceType, country, city, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [alias, userAgentHeader, ipAddress, osType, deviceType, country, city, user_id]
     );
-    // Redirect the user
+    // =========================
+    const cachedData = await redisClient.get(`redirect:${alias}`);
+    if (cachedData) {
+      console.log('Cache hit');
+      const { longUrl } = JSON.parse(cachedData);
+      return res.redirect(longUrl);
+    }
+    // Fetch the original URL
+    const rows = await DB.query(
+      `SELECT longUrl FROM urls WHERE shortUrl = ?`,
+      [alias]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).send('URL not found');
+    }
+    const longUrl = rows[0].longUrl;
+    // caching
+    await redisClient.setEx(
+      `redirect:${alias}`,
+      60, // TTL (Time-To-Live) in seconds
+      JSON.stringify({ longUrl })
+    );
     res.redirect(longUrl);
   } catch (error) {
     logger.error(error.stack)

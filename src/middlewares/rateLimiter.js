@@ -1,48 +1,29 @@
-const rateLimits = new Map(); 
-const rateLimiter = (req, res, next) => {
-    const maxRequests = 10; // Maximum allowed requests
-    const windowMs = 10 * 1000; // Time window in milliseconds (10 seconds)
-    const blockDuration = 10 * 60 * 1000; // Block duration in milliseconds (10 minutes)
+const redisClient = require('./redis');
 
-    // Identify the user by IP
-    const identifier = `ip:${req.ip}`;
+// Middleware to rate limit: max 5 requests per 10 seconds
+const rateLimiter = (limit, windowInSeconds) => {
+    return async (req, res, next) => {
+        const ip = req.ip;
 
-    const currentTime = Date.now();
-    let requestLog = rateLimits.get(identifier);
+        try {
+            const requestCount = await redisClient.incr(ip);
 
-    if (!requestLog) {
-        // Initialize log for the IP
-        requestLog = { requests: [], blockedUntil: null };
-        rateLimits.set(identifier, requestLog);
-    }
+            if (requestCount === 1) {
+                await redisClient.expire(ip, windowInSeconds);
+            }
 
-    if (requestLog.blockedUntil && currentTime < requestLog.blockedUntil) {
-        // IP is blocked
-        return res.status(429).json({
-            success: false,
-            message: "Too many requests. Please try again after 10 minutes.",
-        });
-    }
+            if (requestCount > limit) {
+                return res.status(429).json({
+                    message: 'Too many requests. Please try again later.',
+                });
+            }
 
-    // Filter requests within the time window
-    requestLog.requests = requestLog.requests.filter(
-        (timestamp) => currentTime - timestamp < windowMs
-    );
-
-    // Add the current request timestamp
-    requestLog.requests.push(currentTime);
-
-    if (requestLog.requests.length > maxRequests) {
-        // Block the IP
-        requestLog.blockedUntil = currentTime + blockDuration;
-        return res.status(429).json({
-            success: false,
-            message: "Too many requests. Please try again after 10 minutes.",
-        });
-    }
-
-    // Allow the request
-    next();
+            next();
+        } catch (err) {
+            console.error('Redis error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
 };
 
-module.exports = rateLimiter;
+module.exports = rateLimiter
