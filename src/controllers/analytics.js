@@ -82,7 +82,6 @@ const getUrlAnalytics = async (req, res) => {
       uniqueUsers: data.uniqueUsers.size,
     }));
 
-    // Respond with analytics data
     res.status(200).json({
       totalClicks,
       uniqueClicks: uniqueIPs.size,
@@ -123,7 +122,7 @@ const getTopicAnalytics = async (req, res) => {
 
     analyticsRows.forEach((row) => {
       totalClicks++; //total clicks
-      if (row.user_id) uniqueIPs.add(row.user_id); // total unique ips
+      if (row.user_id) uniqueIPs.add(row.user_id); // total unique ips also possible
       const date = row.date instanceof Date ? row.date.toISOString().split('T')[0] : row.date;
       const existingDate = clicksByDate.find((entry) => entry.date === date);
       if (existingDate) {
@@ -142,14 +141,12 @@ const getTopicAnalytics = async (req, res) => {
       if (row.ipAddress) urlsData[row.shortUrl].uniqueClicks.add(row.ipAddress);
     });
 
-    // Format URL data
     const urls = Object.values(urlsData).map((url) => ({
       shortUrl: url.shortUrl,
       totalClicks: url.totalClicks,
       uniqueClicks: url.uniqueClicks.size,
     }));
 
-    // Respond with analytics data
     res.status(200).json({
       totalClicks,
       uniqueClicks: uniqueIPs.size,
@@ -161,8 +158,84 @@ const getTopicAnalytics = async (req, res) => {
   }
 };
 
-
 const getOverallAnalytics = async (req, res) => {
+  try {
+    console.log(req.user)
+    const user_id = req.user.id
+    console.log(user_id)
+    const DB = new Database();
+    const analyticsRows = await DB.query(
+      `SELECT u.shortUrl, ua.ipAddress, DATE(ua.timestamp) AS date, ua.osType, ua.deviceType, ua.user_id
+       FROM urls u
+       LEFT JOIN url_analytics ua ON u.shortUrl = ua.shortUrl
+       WHERE u.user_id = ?
+       ORDER BY date DESC`,
+      [user_id]
+    );
+
+    let totalUrls = 0;
+    let totalClicks = 0;
+    const uniqueIPs = new Set();
+    const clicksByDate = [];
+    const osData = {};
+    const deviceData = {};
+
+    analyticsRows.forEach((row) => {
+      // Count total clicks and unique users
+      totalClicks++;
+      if (row.ipAddress) uniqueIPs.add(row.user_id);
+
+      if (row.shortUrl) totalUrls++;
+
+      const date = row.date instanceof Date ? row.date.toISOString().split("T")[0] : row.date;
+      const existingDate = clicksByDate.find((entry) => entry.date === date);
+      if (existingDate) {
+        existingDate.clicks++;
+      } else {
+        clicksByDate.push({ date, clicks: 1 });
+      }
+
+      if (row.osType) {
+        if (!osData[row.osType]) {
+          osData[row.osType] = { osName: row.osType, uniqueClicks: 0, uniqueUsers: new Set() };
+        }
+        osData[row.osType].uniqueClicks++;
+        osData[row.osType].uniqueUsers.add(row.user_id);
+      }
+
+      if (row.deviceType) {
+        if (!deviceData[row.deviceType]) {
+          deviceData[row.deviceType] = { deviceName: row.deviceType, uniqueClicks: 0, uniqueUsers: new Set() };
+        }
+        deviceData[row.deviceType].uniqueClicks++;
+        deviceData[row.deviceType].uniqueUsers.add(row.user_id);
+      }
+    });
+
+    const osType = Object.values(osData).map((os) => ({
+      osName: os.osName,
+      uniqueClicks: os.uniqueClicks,
+      uniqueUsers: os.uniqueUsers.size,
+    }));
+
+    const deviceType = Object.values(deviceData).map((device) => ({
+      deviceName: device.deviceName,
+      uniqueClicks: device.uniqueClicks,
+      uniqueUsers: device.uniqueUsers.size,
+    }));
+
+    res.status(200).json({
+      totalUrls,
+      totalClicks,
+      uniqueClicks: uniqueIPs.size,
+      clicksByDate,
+      osType,
+      deviceType,
+    });
+  } catch (error) {
+    logger.error(error.stack);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 module.exports = {
