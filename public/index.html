@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener API Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #f9f9f9;
+            color: black;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .base-url {
+            background: #f0f8ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007BFF;
+            font-size: 16px;
+        }
+        .flex-box {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .flex-item {
+            flex: 1;
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .rate-limiter {
+            background: #ffefef;
+            padding: 15px;
+            border-left: 4px solid #dc3545;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .route {
+            font-weight: bold;
+        }
+        .method {
+            color: #007BFF;
+            font-weight: bold;
+        }
+        .description {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>URL Shortener API</h1>
+        <p>Documentation and Usage Guide</p>
+    </header>
+
+    <div class="container">
+        <div class="base-url">
+            <p><strong>Base URL (Local):</strong> 
+                <a href="http://localhost:3000" target="_blank">
+                    <code>http://localhost:3000</code>
+                </a>
+            </p>
+            <p><strong>Base URL (Hosted):</strong> 
+                <a href="https://url-shortener-3n6e.onrender.com" target="_blank">
+                    <code>https://url-shortener-3n6e.onrender.com</code>
+                </a>
+            </p>
+        </div>
+        <div class="flex-box">
+            <div class="flex-item">
+                <h2>Google Authentication</h2>
+                <ul>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/auth/google</span>
+                        <p class="description">Initiates Google Sign-In for user authentication.</p>
+                    </li>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/auth/google/callback</span>
+                        <p class="description">Callback URL for Google Sign-In.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="flex-item">
+                <h2>URL Management</h2>
+                <ul>
+                    <li>
+                        <span class="method">POST</span> <span class="route">/api/shorten</span>
+                        <p class="description">Creates a shortened URL from a long URL.</p>
+                    </li>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/api/shorten/:alias</span>
+                        <p class="description">Redirects to the original long URL for the given alias.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="flex-item">
+                <h2>Analytics</h2>
+                <ul>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/api/analytics/:alias</span>
+                        <p class="description">Retrieves detailed analytics for a specific short URL.</p>
+                    </li>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/api/analytics/topic/:topic</span>
+                        <p class="description">Retrieves analytics for all short URLs under a specific topic.</p>
+                    </li>
+                    <li>
+                        <span class="method">GET</span> <span class="route">/api/analytics/overall</span>
+                        <p class="description">Retrieves overall analytics for all URLs created by the user.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="rate-limiter">
+            <h2>Rate Limiting</h2>
+            <p>
+                - A maximum of <strong>10 requests per 10 seconds</strong> is allowed per IP address.<br>
+                - Exceeding the limit will block the IP for <strong>10 seconds</strong>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
